@@ -14,6 +14,8 @@ FREE_MODELS = [
     "meta-llama/llama-3.1-8b-instruct:free",
     "google/gemma-3-4b-it:free",
     "mistralai/mistral-7b-instruct:free",
+    # OpenAI as last resort — tiny cost
+    "openai/gpt-4.1-mini",  # via OpenRouter — no separate key needed!
 ]
 
 # ── System message by CEFR level ────────────────────────────────────────────
