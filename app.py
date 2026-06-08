@@ -2,9 +2,13 @@ import os
 from openai import OpenAI
 import gradio as gr
 
-client = OpenAI(
+openrouter_client = OpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
     base_url="https://openrouter.ai/api/v1"
+)
+
+openai_client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
 )
 
 FREE_MODELS = [
@@ -28,40 +32,40 @@ def get_system_message(level):
 
 def chat(message, history, level):
     system_message = get_system_message(level)
-
     messages = [{"role": "system", "content": system_message}]
     for human, assistant in history:
         messages.append({"role": "user", "content": human})
         messages.append({"role": "assistant", "content": assistant})
     messages.append({"role": "user", "content": message})
 
-    last_error = ""
+    # Try free OpenRouter models first
     for model in FREE_MODELS:
         try:
-            print(f"Trying model: {model}")
-            stream = client.chat.completions.create(
-                model=model,
-                messages=messages,
-                stream=True,
-                extra_headers={
-                    "HTTP-Referer": "https://huggingface.co/spaces/Atash22/esl-coach",
-                    "X-Title": "ESL Conversation Coach"
-                }
+            stream = openrouter_client.chat.completions.create(
+                model=model, messages=messages, stream=True,
+                extra_headers={"HTTP-Referer": "https://huggingface.co/spaces/Atash22/esl-coach", "X-Title": "ESL Coach"}
             )
             response = ""
             for chunk in stream:
-                delta = chunk.choices[0].delta.content
-                if delta:
-                    response += delta
-                    yield response
+                response += chunk.choices[0].delta.content or ""
+                yield response
             return
-
         except Exception as e:
-            last_error = str(e)
-            print(f"Model {model} failed: {e}")
+            print(f"{model} failed: {e}")
             continue
 
-    yield f"⚠️ All models failed. Last error: {last_error}"
+    # OpenAI as final fallback
+    try:
+        print("Trying OpenAI fallback...")
+        stream = openai_client.chat.completions.create(
+            model="gpt-4.1-mini", messages=messages, stream=True
+        )
+        response = ""
+        for chunk in stream:
+            response += chunk.choices[0].delta.content or ""
+            yield response
+    except Exception as e:
+        yield f"⚠️ All models failed. Last error: {e}"
 
 gr.ChatInterface(
     fn=chat,
