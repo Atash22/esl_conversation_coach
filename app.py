@@ -92,7 +92,6 @@ def chat(message, history, level):
 # ── Launch ───────────────────────────────────────────────────────────────────
 gr.ChatInterface(
     fn=chat,
-    type="messages",
     title="🎓 ESL Conversation Coach",
     description="Select your English level and start practising! The AI will correct your grammar gently and help you improve naturally.",
     additional_inputs=[
