@@ -2,96 +2,67 @@ import os
 from openai import OpenAI
 import gradio as gr
 
-# ── Client ──────────────────────────────────────────────────────────────────
 client = OpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
     base_url="https://openrouter.ai/api/v1"
 )
 
-# ── Free models with automatic fallback ─────────────────────────────────────
 FREE_MODELS = [
+    "nvidia/llama-3.1-nemotron-nano-8b-v1:free",
     "meta-llama/llama-3.2-3b-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct:free",
     "google/gemma-3-4b-it:free",
-    "mistralai/mistral-7b-instruct:free",
-    # OpenAI as last resort — tiny cost
-    "openai/gpt-4.1-mini",  # via OpenRouter — no separate key needed!
+    "microsoft/phi-3-mini-128k-instruct:free",
+    "meta-llama/llama-3.1-8b-instruct:free",
+    "openai/gpt-4.1-mini",  # paid fallback — only charges if ALL free models fail
 ]
 
-# ── System message by CEFR level ────────────────────────────────────────────
 def get_system_message(level):
     levels = {
-        "A1 - Beginner": """
-You are a warm ESL coach for BEGINNERS.
-- Use very simple words and short sentences
-- Correct only the most critical mistakes, very gently
-- 💡 Tip: use simple corrections like 'Try saying: ...'
-- Always end with a very simple yes/no question
-""",
-        "A2 - Elementary": """
-You are a friendly ESL coach for ELEMENTARY students.
-- Use simple, everyday vocabulary and short sentences
-- Correct up to 2 mistakes per reply, kindly
-- 💡 Tip: 'Good try! Instead say: ...'
-- Introduce basic new words with simple definitions
-- End with a simple question about daily life
-""",
-        "B1 - Intermediate": """
-You are an encouraging ESL coach for INTERMEDIATE students.
-- Respond naturally, then correct grammar mistakes gently
-- 💡 Tip: 'Instead of X, try Y — because...'
-- Suggest one new vocabulary word per reply with an example sentence
-- End with a follow-up question to keep conversation going
-""",
-        "B2 - Upper Intermediate": """
-You are a motivating ESL coach for UPPER INTERMEDIATE students.
-- Engage naturally and correct more subtle grammar mistakes
-- 💡 Point out word choice issues and suggest better alternatives
-- Introduce collocations and phrasal verbs related to the topic
-- Challenge them with open-ended discussion questions
-""",
-        "C1 - Advanced": """
-You are a sophisticated ESL coach for ADVANCED students.
-- Engage in natural, nuanced conversation
-- Focus on subtle grammar, style, and register issues
-- 💡 Suggest precise academic or professional vocabulary
-- Highlight idioms and collocations
-- Challenge them with complex, thought-provoking questions
-"""
+        "A1 - Beginner": "You are a warm ESL coach for BEGINNERS. Use very simple words. Correct only critical mistakes gently. End with a simple yes/no question.",
+        "A2 - Elementary": "You are a friendly ESL coach for ELEMENTARY students. Use simple everyday vocabulary. Correct up to 2 mistakes kindly. End with a simple question.",
+        "B1 - Intermediate": "You are an encouraging ESL coach for INTERMEDIATE students. Respond naturally then correct grammar gently. Suggest one new vocabulary word. End with a follow-up question.",
+        "B2 - Upper Intermediate": "You are a motivating ESL coach for UPPER INTERMEDIATE students. Correct subtle grammar mistakes. Introduce collocations and phrasal verbs. Ask open-ended questions.",
+        "C1 - Advanced": "You are a sophisticated ESL coach for ADVANCED students. Focus on subtle grammar, style and register. Suggest academic vocabulary. Ask complex thought-provoking questions."
     }
-    return levels[level]
+    return levels.get(level, levels["B1 - Intermediate"])
 
-# ── Chat function with streaming + model fallback ────────────────────────────
 def chat(message, history, level):
     system_message = get_system_message(level)
 
-    history = [{"role": h["role"], "content": h["content"]} for h in history]
-    messages = [{"role": "system", "content": system_message}] + history + [{"role": "user", "content": message}]
+    messages = [{"role": "system", "content": system_message}]
+    for human, assistant in history:
+        messages.append({"role": "user", "content": human})
+        messages.append({"role": "assistant", "content": assistant})
+    messages.append({"role": "user", "content": message})
 
+    last_error = ""
     for model in FREE_MODELS:
         try:
+            print(f"Trying model: {model}")
             stream = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 stream=True,
                 extra_headers={
-                    "HTTP-Referer": "https://huggingface.co/spaces/atash22/esl-coach",
+                    "HTTP-Referer": "https://huggingface.co/spaces/Atash22/esl-coach",
                     "X-Title": "ESL Conversation Coach"
                 }
             )
             response = ""
             for chunk in stream:
-                response += chunk.choices[0].delta.content or ""
-                yield response
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    response += delta
+                    yield response
             return
 
         except Exception as e:
-            print(f"Model {model} failed: {e} — trying next...")
+            last_error = str(e)
+            print(f"Model {model} failed: {e}")
             continue
 
-    yield "⚠️ All free models are currently at their limit. Please try again in a minute!"
+    yield f"⚠️ All models failed. Last error: {last_error}"
 
-# ── Launch ───────────────────────────────────────────────────────────────────
 gr.ChatInterface(
     fn=chat,
     title="🎓 ESL Conversation Coach",
