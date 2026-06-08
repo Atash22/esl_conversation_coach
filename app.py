@@ -93,7 +93,7 @@ def chat(message, history, level):
 gr.ChatInterface(
     fn=chat,
     title="🎓 ESL Conversation Coach",
-    description="Select your English level and start practising! The AI will correct your grammar gently and help you improve naturally.",
+    description="Select your English level and start practising!",
     additional_inputs=[
         gr.Dropdown(
             choices=[
@@ -106,13 +106,5 @@ gr.ChatInterface(
             value="B1 - Intermediate",
             label="Your English Level"
         )
-    ],
-    examples=[
-        ["Tell me about your weekend", "B1 - Intermediate"],
-        ["I go to school yesterday", "A1 - Beginner"],
-        ["I want to learn new words about food", "A2 - Elementary"],
-        ["Can we discuss the impact of social media?", "B2 - Upper Intermediate"],
-        ["Let's discuss the ethics of AI", "C1 - Advanced"],
-    ],
-    theme=gr.themes.Soft()
+    ]
 ).launch()
