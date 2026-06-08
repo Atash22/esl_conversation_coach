@@ -1,2 +1,2 @@
 openai
-gradio
+gradio>=4.0.0
