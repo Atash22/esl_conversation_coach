@@ -21,9 +21,15 @@ def chat(message, history, level):
     system_message = get_system_message(level)
 
     messages = [{"role": "system", "content": system_message}]
-    for human, assistant in history:
-        messages.append({"role": "user", "content": human})
-        messages.append({"role": "assistant", "content": assistant})
+    
+    for item in history:
+        if isinstance(item, dict):
+            messages.append({"role": item["role"], "content": item["content"]})
+        else:
+            human, assistant = item
+            messages.append({"role": "user", "content": human})
+            messages.append({"role": "assistant", "content": assistant})
+    
     messages.append({"role": "user", "content": message})
 
     stream = client.chat.completions.create(
@@ -35,22 +41,4 @@ def chat(message, history, level):
     for chunk in stream:
         response += chunk.choices[0].delta.content or ""
         yield response
-
-gr.ChatInterface(
-    fn=chat,
-    title="🎓 ESL Conversation Coach",
-    description="Select your English level and start practising!",
-    additional_inputs=[
-        gr.Dropdown(
-            choices=[
-                "A1 - Beginner",
-                "A2 - Elementary",
-                "B1 - Intermediate",
-                "B2 - Upper Intermediate",
-                "C1 - Advanced"
-            ],
-            value="B1 - Intermediate",
-            label="Your English Level"
-        )
-    ]
 ).launch()
