@@ -2,23 +2,11 @@ import os
 from openai import OpenAI
 import gradio as gr
 
-openrouter_client = OpenAI(
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-    base_url="https://openrouter.ai/api/v1"
-)
-
-openai_client = OpenAI(
+client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
 
-FREE_MODELS = [
-    "nvidia/llama-3.1-nemotron-nano-8b-v1:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
-    "google/gemma-3-4b-it:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "openai/gpt-4.1-mini",  # paid fallback — only charges if ALL free models fail
-]
+MODEL = "gpt-4.1-mini"
 
 def get_system_message(level):
     levels = {
@@ -32,40 +20,22 @@ def get_system_message(level):
 
 def chat(message, history, level):
     system_message = get_system_message(level)
+
     messages = [{"role": "system", "content": system_message}]
     for human, assistant in history:
         messages.append({"role": "user", "content": human})
         messages.append({"role": "assistant", "content": assistant})
     messages.append({"role": "user", "content": message})
 
-    # Try free OpenRouter models first
-    for model in FREE_MODELS:
-        try:
-            stream = openrouter_client.chat.completions.create(
-                model=model, messages=messages, stream=True,
-                extra_headers={"HTTP-Referer": "https://huggingface.co/spaces/Atash22/esl-coach", "X-Title": "ESL Coach"}
-            )
-            response = ""
-            for chunk in stream:
-                response += chunk.choices[0].delta.content or ""
-                yield response
-            return
-        except Exception as e:
-            print(f"{model} failed: {e}")
-            continue
-
-    # OpenAI as final fallback
-    try:
-        print("Trying OpenAI fallback...")
-        stream = openai_client.chat.completions.create(
-            model="gpt-4.1-mini", messages=messages, stream=True
-        )
-        response = ""
-        for chunk in stream:
-            response += chunk.choices[0].delta.content or ""
-            yield response
-    except Exception as e:
-        yield f"⚠️ All models failed. Last error: {e}"
+    stream = client.chat.completions.create(
+        model=MODEL,
+        messages=messages,
+        stream=True
+    )
+    response = ""
+    for chunk in stream:
+        response += chunk.choices[0].delta.content or ""
+        yield response
 
 gr.ChatInterface(
     fn=chat,
