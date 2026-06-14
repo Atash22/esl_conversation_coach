@@ -1,0 +1,20 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Gradio
+.gradio/
+flagged/
+
+# OS / editor
+.DS_Store
+.vscode/
