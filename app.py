@@ -43,10 +43,34 @@ def chat(message, history, level):
         response += chunk.choices[0].delta.content or ""
         yield response
 
+# ---- Theme + styling ----
+theme = gr.themes.Soft(
+    primary_hue="indigo",
+    secondary_hue="blue",
+    neutral_hue="slate",
+    font=[gr.themes.GoogleFont("Inter"), "sans-serif"],
+)
+
+custom_css = """
+.gradio-container {max-width: 900px !important; margin: auto !important;}
+.message {border-radius: 16px !important;}
+footer {visibility: hidden}
+"""
+
 gr.ChatInterface(
     fn=chat,
     title="🎓 ESL Conversation Coach",
-    description="Select your English level and start practising!",
+    description=(
+        "Practice speaking and writing English at your level — "
+        "get instant, friendly feedback and new vocabulary as you chat."
+    ),
+    theme=theme,
+    css=custom_css,
+    chatbot=gr.Chatbot(
+        avatar_images=(None, "🎓"),
+        height=480,
+        show_copy_button=True,
+    ),
     additional_inputs=[
         gr.Dropdown(
             choices=[
@@ -59,5 +83,13 @@ gr.ChatInterface(
             value="B1 - Intermediate",
             label="Your English Level"
         )
-    ]
+    ],
+    additional_inputs_accordion=gr.Accordion(label="Your English Level", open=True),
+    examples=[
+        ["I apply to jobs", "B1 - Intermediate"],
+        ["Yesterday I go to the store and buy some milk", "A2 - Elementary"],
+        ["Can you help me practice for a job interview?", "B2 - Upper Intermediate"],
+        ["I would like to elaborate on the socioeconomic implications", "C1 - Advanced"],
+    ],
+    cache_examples=False,
 ).launch()
