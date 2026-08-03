@@ -20,6 +20,10 @@ register, style, and academic vocabulary.
 Built with an LLM (via [OpenRouter](https://openrouter.ai)) and a
 [Gradio](https://www.gradio.app/) chat interface.
 
+## Demo
+
+![ESL Conversation Coach demo](./demo.gif)
+
 ## Why I built it
 
 I taught ESL for eight years before moving into AI. This project combines both: it
