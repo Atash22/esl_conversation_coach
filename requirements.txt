@@ -1,5 +1,5 @@
 openai>=1.0.0
-gradio==4.44.0
+gradio==4.44.1
 huggingface_hub>=0.24.0,<0.26.0
 python-dotenv>=1.0.0
 audioop-lts; python_version >= "3.13"
