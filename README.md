@@ -1,3 +1,14 @@
+---
+title: ESL Conversation Coach
+emoji: 🎓
+colorFrom: indigo
+colorTo: blue
+sdk: gradio
+sdk_version: "4.44.0"
+app_file: app.py
+pinned: false
+---
+
 # 🎓 ESL Conversation Coach
 
 A conversational AI that helps English learners practice speaking and writing at any
